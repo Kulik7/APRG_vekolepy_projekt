@@ -3,8 +3,8 @@ from random import randint, choice
 from _collections import deque
 
 from PyQt5 import QtGui, QtCore
-from PyQt5.QtWidgets import QApplication, QHeaderView, QFrame, QWidget, QTableWidget, QGridLayout, QLineEdit
-from PyQt5.QtGui import QColor
+from PyQt5.QtWidgets import QApplication, QHeaderView, QFrame, QWidget, QTableWidget, QGridLayout, QPushButton, QLineEdit, QHBoxLayout, QLabel, QMessageBox
+from PyQt5.QtGui import QColor, QIntValidator
 from PyQt5.QtCore import QTimer, QEventLoop
 
 
@@ -15,7 +15,7 @@ class TBunka(QFrame):
         self.visited = False
         self.x = x
         self.y = y
-        self.way = False
+        self.way = False #myšleno finální cesta
 
     def paintEvent(self, event):
         QFrame.paintEvent(self, event)
@@ -66,21 +66,57 @@ class TBunka(QFrame):
 class TOkenko(QWidget):  # = objekt typu okénko
     def __init__(self):
         super().__init__()
-        self.vel_tabulky = int(input("Ahoj jak složité bludiště si přeješ? (jakože počet čtverečků na čtvereček) "))
         self.initUI()
 
     def initUI(self):
         self.setWindowTitle(self.tr("Velkolepé bludiště"))
-        self.createTable()
-        self.resize(self.mazeTable.sizeHint())
+        self.prepareForm()
         self.show()
-        self.createMaze()
-        self.solveMaze()
+
+    def prepareForm(self):
+        self.layout = QGridLayout()
+        self.horLayout = QHBoxLayout()
+
+        # Create pushbutton1
+        self.bTable = QPushButton("Create table")
+        self.bTable.clicked.connect(lambda: self.createTable())
+        self.horLayout.addWidget(self.bTable)
+
+        # Create pushbutton2
+        self.bGenMaze = QPushButton("Generate maze")
+        self.bGenMaze.clicked.connect(lambda: self.createMaze())
+        self.horLayout.addWidget(self.bGenMaze)
+
+        # Create pushbutton2
+        self.bRun = QPushButton("Drop the mouse!")
+        self.bRun.clicked.connect(lambda: self.solveMaze())
+        self.horLayout.addWidget(self.bRun)
+
+        # Create label
+        self.label = QLabel("Table size:")
+        self.horLayout.addWidget(self.label)
+
+        # input window
+        self.input = QLineEdit()
+        self.input.setMaxLength(2)
+        self.input.setValidator(QIntValidator())
+
+        self.horLayout.addWidget(self.input)
+        self.layout.addLayout(self.horLayout, 0,0)
+        self.setLayout(self.layout)
+
 
     def createTable(self):
-        lineEdit = QLineEdit()
-        if lineEdit.editingFinished():
-            vel_ctverce = int(lineEdit.text())
+        self.vel_tabulky = self.input.text()
+
+        if self.vel_tabulky == "":
+            QMessageBox.information(self,"Info","Zero sized table")
+            self.prepareForm()
+            return
+
+        self.vel_tabulky = int(self.vel_tabulky)
+
+        vel_ctverce = 50
 
         # Create table
         self.mazeTable = QTableWidget()
@@ -103,8 +139,7 @@ class TOkenko(QWidget):  # = objekt typu okénko
         self.mazeTable.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.mazeTable.horizontalHeader().setVisible(False)
 
-        # vlož do okénka
-        self.layout = QGridLayout()
+        # vlož do okénka a vycentruj
         self.layout.addWidget(self.mazeTable)
         self.setLayout(self.layout)
 
@@ -159,6 +194,19 @@ class TOkenko(QWidget):  # = objekt typu okénko
             next_cell = nCell
         return next_cell
 
+    def wait(self):
+        self.setWindowTitle(self.tr("Velkolepé bludiště         5"))
+        self.delaly_program(1000)
+        self.setWindowTitle(self.tr("Velkolepé bludiště         4"))
+        self.delaly_program(1000)
+        self.setWindowTitle(self.tr("Velkolepé bludiště         3"))
+        self.delaly_program(1000)
+        self.setWindowTitle(self.tr("Velkolepé bludiště         2"))
+        self.delaly_program(1000)
+        self.setWindowTitle(self.tr("Velkolepé bludiště         1"))
+        self.delaly_program(1000)
+        self.setWindowTitle(self.tr("Velkolepé bludiště"))
+
     def delaly_program(self, msec):
         self.timer = QtCore.QTimer()
         loop = QEventLoop()
@@ -171,6 +219,7 @@ class TOkenko(QWidget):  # = objekt typu okénko
         cy = randint(0, self.vel_tabulky - 1)
         cCell = self.mazeTable.cellWidget(cx, cy)
         zasobnik.append(cCell)
+        #cCell.was_visited()
 
         while len(zasobnik) != 0:
             cCell.setStyleSheet("background-color: pink")
@@ -187,20 +236,6 @@ class TOkenko(QWidget):  # = objekt typu okénko
             cCell.remove_new_wall(smer) # i v nové buňce probourám hranice
             cCell.was_visited() # a označím jako navštívenou
 
-
-    def wait(self):
-        self.setWindowTitle(self.tr("Velkolepé bludiště         5"))
-        self.delaly_program(1000)
-        self.setWindowTitle(self.tr("Velkolepé bludiště         4"))
-        self.delaly_program(1000)
-        self.setWindowTitle(self.tr("Velkolepé bludiště         3"))
-        self.delaly_program(1000)
-        self.setWindowTitle(self.tr("Velkolepé bludiště         2"))
-        self.delaly_program(1000)
-        self.setWindowTitle(self.tr("Velkolepé bludiště         1"))
-        self.delaly_program(1000)
-        self.setWindowTitle(self.tr("Velkolepé bludiště"))
-
     def solveMaze(self):
         # stejný princip jako při tvoření bludiště
         # při tvoření se všechny bunky staly navštívenými, takže teď se jen rozhoduje opačně = vejdi pokud buňka byla navštívená a projitou označ nenavštívená
@@ -209,31 +244,25 @@ class TOkenko(QWidget):  # = objekt typu okénko
         cy = randint(0, self.vel_tabulky - 1)
         cCell = self.mazeTable.cellWidget(cx, cy)
         firstCell = cCell
-        cCell.setStyleSheet('background-image: url("mouse.png"); background-position: center; background-repeat: no-repeat')
 
         lx = randint(0, self.vel_tabulky - 1)  # last x/y
         ly = randint(0, self.vel_tabulky - 1)
         lCell = self.mazeTable.cellWidget(lx, ly)
-        lCell.setStyleSheet('background-image: url("cheese.jpg"); background-position: center; background-repeat: no-repeat')
         zasobnik.append(cCell)
-        #self.wait()
+        cCell.was_not_visited()
 
         while cCell != lCell:
-            cCell.setStyleSheet('background-image: url("mouse.png"); background-position: center; background-repeat: no-repeat')
-            self.delaly_program(500)  # tím že program pozastavím dělá animaci
             pn = self.possible_neighbours(cCell.x, cCell.y)
             if len(pn) == 0:
                 cCell.wrong_way()
-                cCell.setStyleSheet("background-color: red")
                 cCell = zasobnik.pop()
                 continue
+
             cCell.right_way()
-            cCell.setStyleSheet("background-color: pink")
             smer = choice(list(pn.keys()))  # vylosuj směr k jednomu z možných sousedů
             cCell = pn[smer]  # po směru se posunu na další = nová aktuální buňka
             zasobnik.append(cCell)  # novou buňku vložím do zásobníku
             cCell.was_not_visited()  # a označím jako nenavštívenou
-        self.wait()
         self.go_through_maze(firstCell, lCell)
 
 
@@ -241,6 +270,7 @@ class TOkenko(QWidget):  # = objekt typu okénko
         cCell = firstCell
         cCell.setStyleSheet('background-image: url("mouse.png"); background-position: center; background-repeat: no-repeat')
         lCell.setStyleSheet('background-image: url("cheese.jpg"); background-position: center; background-repeat: no-repeat')
+        self.wait()
 
         while cCell != 0:
             cCell.was_visited() # a označím jako navštívenou
@@ -261,5 +291,3 @@ if __name__ == '__main__':
     main()
 
 #upravit velikost okna podle tabulky
-#probl0m ytracen7ch neoyna4en7ch pol94ek cestz
-#reakce na stisknutí tlačítka
