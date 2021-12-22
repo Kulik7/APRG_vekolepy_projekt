@@ -74,7 +74,7 @@ class TBunka(QFrame):
 
 class TOkenko(QWidget):  # = objekt typu okénko
     def __init__(self):
-        super().__init__()
+        super().__init__() 
         self.initUI()
 
 
@@ -88,7 +88,7 @@ class TOkenko(QWidget):  # = objekt typu okénko
         self.layout = QGridLayout()
         self.horLayout = QHBoxLayout()
 
-        # Create label
+        # Create label (edited comment for git purspouse)
         self.label = QLabel("Table size:")
         self.horLayout.addWidget(self.label)
 
